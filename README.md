@@ -15,6 +15,8 @@ corepack pnpm@11.19.0 install
 corepack pnpm@11.19.0 dev
 ```
 
+pnpmの依存ビルドスクリプト許可は`pnpm-workspace.yaml`で管理しています。Vite／Vitestが使う`esbuild`のスクリプトを許可しているため、CIでも対話的な`pnpm approve-builds`は不要です。
+
 ## ビルド
 
 ```sh

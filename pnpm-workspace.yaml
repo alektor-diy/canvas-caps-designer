@@ -1,0 +1,3 @@
+# Vite and Vitest use esbuild; its postinstall verifies the native executable.
+allowBuilds:
+  esbuild: true
