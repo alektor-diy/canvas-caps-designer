@@ -8,7 +8,7 @@
 
 ## 開発
 
-Node.jsを用意し、リポジトリでCorepack経由で以下を実行します。`pnpm`コマンドのPATH登録や管理者権限は不要です。
+Node.js 24を用意し、リポジトリでCorepack経由で以下を実行します。pnpm 11はNode.js 22.13以上が必要です。`pnpm`コマンドのPATH登録や管理者権限は不要です。
 
 ```sh
 corepack pnpm@11.19.0 install
