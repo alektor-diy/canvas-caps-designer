@@ -4,7 +4,7 @@
 
 ## バージョンと変更履歴
 
-現在のバージョンは **v0.1.0（初版）** です。利用者に影響する機能や操作の変更は、細かな反復修正をまとめたうえで [CHANGELOG.md](./CHANGELOG.md) に記録します。リリース時は `package.json` とアプリ内のバージョン表示も更新します。
+現在のバージョンは **v0.2.0** です。利用者に影響する機能や操作の変更は、細かな反復修正をまとめたうえで [CHANGELOG.md](./CHANGELOG.md) に記録します。リリース時は `package.json` とアプリ内のバージョン表示も更新します。
 
 ## 開発
 
@@ -41,7 +41,7 @@ GitHubリポジトリの **Settings → Pages → Build and deployment → GitHu
 - `src/model.ts`: CCAP型、u/mm変換、スナップ、キー形状、衝突・外形・サイズ・PPI計算、CCAP検証
 - `src/ui.tsx`: Designer UI、編集操作、ファイル入出力、IndexedDB復旧
 - `src/templates.json`: JSONで拡張できるテンプレートデータ
-- `src/style.css`: 1画面型デスクトップUI
+- `src/style.css`: レスポンシブなデザインスタジオUI
 
 ## キャンバス操作
 
