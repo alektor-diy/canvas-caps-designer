@@ -30,6 +30,10 @@ corepack pnpm@11.19.0 preview
 
 GitHubリポジトリの **Settings → Pages → Build and deployment → GitHub Actions** を選択してください。`main`へのpushで`.github/workflows/pages.yml`がビルドしてPagesへ公開します。初回のみActionsがPagesへデプロイできる権限を確認します。
 
+`Failed to create deployment (status: 404)`が出る場合は、まず **Settings → Pages → Build and deployment → Source** が **GitHub Actions** になっているか確認してください。Pagesが未有効の場合、アプリのビルドが成功してもデプロイは失敗します。設定後はActionsでワークフロー全体を再実行してください。
+
+ワークフローはビルド前に`actions/configure-pages`でPages設定を確認します。Pagesを自動で有効化する処理は行わないため、初回の設定はリポジトリ管理者が行ってください。
+
 ## 主なライブラリ
 
 - React / React DOM: 画面UI
