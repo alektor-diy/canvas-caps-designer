@@ -704,10 +704,6 @@ kbd{
   gap:16px;
   color:#7a8665;
   font-size:9px}
-.app footer>span:last-child{
-  font-size:8px;
-  letter-spacing:1px;
-  color:#9aa18d}
 .app footer.has-warning{
   height:auto;
   min-height:39px;
@@ -936,8 +932,6 @@ kbd{
   padding:10px 16px;
   height:auto;
   align-items:flex-start}
-.app footer>span:last-child{
-  text-align:right}
 .empty-state{
   padding-top:65px}
 .canvas-foot>span:last-child{
