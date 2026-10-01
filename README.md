@@ -63,4 +63,8 @@ GitHubリポジトリの **Settings → Pages → Build and deployment → GitHu
 
 ## データ形式
 
-`.ccap`は`project.json`と元形式の`artwork.*`を含むZIPです。自動保存は1枠のIndexedDBを使い、約1秒のデバウンス後に更新します。
+`.ccap`は`project.json`、元形式の`artwork.*`（画像配置時）、確認用の`preview.png`を含むZIPです。拡張子を`.zip`に変更すると、PNGを取り出して確認できます。
+
+`preview.png`は画面の完成プレビューと同じ描画処理で生成します。暗い背景・白いキー下地・キー輪郭を含み、画像の配置・回転・切り抜きを反映します。保存時のズームや編集フェーズにかかわらず全キーを収め、長辺1600pxで出力します。確認用画像であり、製造用データや実物の色味・質感を保証するものではありません。SVGファイルは同梱しません。
+
+CCAP v1の`project.json`と元画像の形式は変更していません。PNGのない既存CCAPも読み込めます。自動保存は1枠のIndexedDBを使い、約1秒のデバウンス後に更新します。
