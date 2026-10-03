@@ -1230,3 +1230,18 @@ kbd{
 .artwork-slots button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px solid #d0d4c3;border-radius:8px;background:#fcfcf7;color:#444b37}
 .artwork-slots button.current{background:#e7edce;border-color:#687b21;color:#35441c}
 .artwork-slots small{font-size:10px;font-weight:400}
+.app>header{height:88px;padding-inline:24px;gap:20px}
+.actions{gap:8px;flex-wrap:wrap;align-items:center}
+.actions button,.actions .primary{height:40px;padding:0 14px;font-size:12px}
+.actions .share-button{margin-right:8px;white-space:nowrap;font-weight:500}
+.share-button>span{font-size:17px;line-height:1}
+.share-dialog{border:1px solid var(--line);color:var(--ink);max-height:calc(100dvh - 40px);overflow:auto}
+.share-dialog::backdrop{background:#22281e70}
+.share-dialog p{font-size:12px;line-height:1.9}
+.share-filename{overflow-wrap:anywhere}
+.share-copy{margin:20px 0 0;padding:14px;background:#e7edcf;border-radius:8px;white-space:pre-wrap;font-size:12px;line-height:1.8}
+.share-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px}
+.share-link:hover{background:#414b2c}
+.share-dialog>div{flex-wrap:wrap}
+@media(max-width:760px){.studio-heading{flex-wrap:wrap;gap:12px}.share-dialog{padding:24px}}
+@media(max-width:900px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}

@@ -3,6 +3,18 @@ import { bounds, keyPath, newDesign } from './model';
 import { previewFrame, previewSvg } from './preview';
 
 describe('preview export', () => {
+  it.each([0, 90])('limits sharing previews to 1200px with aspect ratio intact (rotation %s)', rotation => {
+    const design = newDesign();
+    design.keys = [{ id: 'key', type: '2.25u', xMm: 100, yMm: 100, rotation }];
+    const normal = previewSvg(design, '');
+    const shared = previewSvg(design, '', 1200);
+    expect(Math.max(normal.width, normal.height)).toBe(1600);
+    expect(Math.max(shared.width, shared.height)).toBe(1200);
+    expect(shared.width).toBe(Math.round(normal.width * 1200 / 1600));
+    expect(shared.height).toBe(Math.round(normal.height * 1200 / 1600));
+    expect(shared.markup.match(/viewBox="[^"]+"/)?.[0]).toBe(normal.markup.match(/viewBox="[^"]+"/)?.[0]);
+  });
+
   it('clips and outlines rotated keys with a frame that includes their full shape', () => {
     const design = newDesign();
     design.keys = [{ id: 'rotated', type: '2u', xMm: 40, yMm: 40, rotation: 37.5 }];
