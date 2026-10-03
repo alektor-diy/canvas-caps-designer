@@ -1244,6 +1244,11 @@ kbd{
 .share-link{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:8px;text-decoration:none;font-size:12px}
 .share-link:hover{background:#414b2c}
 .share-dialog>div{flex-wrap:wrap}
+.resolution-list{padding-left:20px;font-size:12px;line-height:1.9}
+.share-notice{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.share-notice h3{margin:0;font-size:13px;font-weight:500}
+.share-notice p{margin-bottom:8px}
+.share-notice ul{margin:0;padding-left:20px;font-size:12px;line-height:1.9}
 @media(max-width:760px){.studio-heading{flex-wrap:wrap;gap:12px}.share-dialog{padding:24px}}
 @media(max-width:1000px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}
 @media(max-width:480px){.brand{gap:8px}.brand b{font-size:18px}.logo{width:35px;height:35px}}
