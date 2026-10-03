@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const postText = 'Canvas Caps Designerでキーキャップをデザインしました！\n#CanvasCapsDesigner #自作キーボード';
+const postText = 'CanvasCapsDesignerでキーキャップをデザインしました！\n#CanvasCapsDesigner #自作キーボード';
 const postUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(postText)}`;
 
 export function ShareDialog({ filename, onClose }: { filename: string; onClose: () => void }) {

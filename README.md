@@ -1,4 +1,4 @@
-# Canvas caps Designer
+# CanvasCapsDesigner
 
 ブラウザ内でキーレイアウトと最大2枚のアートワーク配置を編集し、CCAP v1として保存する静的Webアプリです。製造形状や製造用データは扱いません。画像はアップロードされず、IndexedDBを含めクライアント内で処理されます。
 
@@ -45,7 +45,7 @@ GitHubリポジトリの **Settings → Pages → Build and deployment → GitHu
 ## 構成
 
 - `src/model.ts`: CCAP型、u/mm変換、スナップ、キー形状、衝突・外形・サイズ・PPI計算、CCAP検証
-- `src/ui.tsx`: Designer UI、編集操作、ファイル入出力、IndexedDB復旧
+- `src/ui.tsx`: CanvasCapsDesigner UI、編集操作、ファイル入出力、IndexedDB復旧
 - `src/templates.json`: JSONで拡張できるテンプレートデータ
 - `src/style.css`: レスポンシブなデザインスタジオUI
 
@@ -74,4 +74,4 @@ GitHubリポジトリの **Settings → Pages → Build and deployment → GitHu
 
 `preview.png`は画面の完成プレビューと同じ描画処理で生成します。暗い背景・白いキー下地・キー輪郭を含み、画像の配置・回転・切り抜きを反映します。保存時のズームや編集フェーズにかかわらず全キーを収め、長辺1600pxで出力します。確認用画像であり、製造用データや実物の色味・質感を保証するものではありません。SVGファイルは同梱しません。
 
-CCAP v1の`project.json`は従来の`artwork`に加え、2枚目を任意フィールド`artwork2`として保存します。重なり順は任意の`frontArtwork`（0: 画像1、1: 画像2、未指定時は画像2）で保存します。各フィールドは元画像のファイル名・位置・サイズ・回転を持ちます。従来の1枚入りCCAPと自動保存も読み込めます。2枚入りCCAPの編集には、この機能に対応したDesignerを使用してください。PNGのない既存CCAPも読み込めます。自動保存は1枠のIndexedDBを使い、約1秒のデバウンス後に更新します。
+CCAP v1の`project.json`は従来の`artwork`に加え、2枚目を任意フィールド`artwork2`として保存します。重なり順は任意の`frontArtwork`（0: 画像1、1: 画像2、未指定時は画像2）で保存します。各フィールドは元画像のファイル名・位置・サイズ・回転を持ちます。従来の1枚入りCCAPと自動保存も読み込めます。2枚入りCCAPの編集には、この機能に対応したCanvasCapsDesignerを使用してください。PNGのない既存CCAPも読み込めます。自動保存は1枠のIndexedDBを使い、約1秒のデバウンス後に更新します。

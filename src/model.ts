@@ -12,7 +12,7 @@ export type ArtworkSlot = 0|1;
 export const artworkSlots = (design:Design) => [design.artwork, design.artwork2 ?? null] as const;
 export const artworkOrder = (design:Design):ArtworkSlot[] => design.frontArtwork===0?[1,0]:[0,1];
 export const setArtwork = (design:Design, slot:ArtworkSlot, artwork:Artwork|null):Design => ({...design,[slot===0?'artwork':'artwork2']:artwork});
-export const newDesign = (name='My Canvas caps'):Design => { const now=new Date().toISOString(); return {formatVersion:1,project:{name,createdAt:now,modifiedAt:now},layout:{unitMm:UNIT_MM},keys:[],artwork:null}; };
+export const newDesign = (name='My CanvasCapsDesigner'):Design => { const now=new Date().toISOString(); return {formatVersion:1,project:{name,createdAt:now,modifiedAt:now},layout:{unitMm:UNIT_MM},keys:[],artwork:null}; };
 export const toU=(mm:number,unit=UNIT_MM)=>mm/unit;
 export const toMm=(u:number,unit=UNIT_MM)=>u*unit;
 export const snapMm=(mm:number,unit=UNIT_MM)=>Math.round(mm/(unit*GRID_U))*unit*GRID_U;
