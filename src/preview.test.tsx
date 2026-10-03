@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { newDesign } from './model';
+import { bounds, keyPath, newDesign } from './model';
 import { previewFrame, previewSvg } from './preview';
 
 describe('preview export', () => {
+  it('clips and outlines rotated keys with a frame that includes their full shape', () => {
+    const design = newDesign();
+    design.keys = [{ id: 'rotated', type: '2u', xMm: 40, yMm: 40, rotation: 37.5 }];
+    const path = keyPath(design.keys[0]), frame = previewFrame(design), extent = bounds(design.keys);
+    expect(frame.minX).toBeLessThan(extent.minX);
+    expect(frame.minY).toBeLessThan(extent.minY);
+    expect(frame.minX + frame.width).toBeGreaterThan(extent.maxX);
+    expect(frame.minY + frame.height).toBeGreaterThan(extent.maxY);
+    expect(previewSvg(design, '').markup.split(`d="${path}"`)).toHaveLength(5);
+  });
+
   it('renders both images in a stable order with independent placement and rotation', () => {
     const design = newDesign();
     design.artwork = { file: 'artwork.png', xMm: 0, yMm: 0, widthMm: 40, heightMm: 20, rotation: 0 };

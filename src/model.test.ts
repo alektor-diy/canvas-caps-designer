@@ -6,11 +6,80 @@ import {
   resizeArtworkFromCorner, resizeArtworkWithSnap,
   artworkSlots, setArtwork,
   artworkCorners, moveArtworkWithSnap,
+  keyCenter, keyCorners, keyPath, moveKeysWithSnap,
 } from './model';
 
 const key = (id: string, type: Key['type'], xMm: number, yMm: number): Key => ({ id, type, xMm, yMm, rotation: 0 });
 
 describe('design geometry', () => {
+  it('rotates around the unchanged center and measures the rotated outline', () => {
+    const original = key('a', '2u', 40, 40), rotated = { ...original, rotation: 90 };
+    expect(keyCenter(rotated)).toEqual(keyCenter(original));
+    expect(bounds([rotated]).width).toBeCloseTo(17);
+    expect(bounds([rotated]).height).toBeCloseTo(34);
+    expect(keyCorners({ ...original, type: 'ISO Enter', rotation: 33 })).toHaveLength(6);
+    expect(keyPath(rotated)).toContain(' L ');
+  });
+
+  it('uses polygon overlap rather than bounding boxes, allowing corner and edge contact', () => {
+    const a = { ...key('a', '1u', 41.5, 41.5), rotation: 45 };
+    const diagonal = { ...key('b', '1u', 59.5, 59.5), rotation: 45 };
+    expect(bounds([a]).maxX).toBeGreaterThan(bounds([diagonal]).minX);
+    expect(bounds([a]).maxY).toBeGreaterThan(bounds([diagonal]).minY);
+    expect(collides(a, diagonal)).toBe(false);
+    expect(collides(a, { ...diagonal, xMm: 50, yMm: 50 })).toBe(true);
+    expect(collides(key('c', '1u', 0, 0), key('d', '1u', 17, 17))).toBe(false);
+    expect(collides(key('c', '1u', 0, 0), key('d', '1u', 17, 0))).toBe(false);
+    const iso = { ...key('i', 'ISO Enter', 40, 40), rotation: 90 };
+    expect(collides(iso, iso)).toBe(true);
+    expect(canPlace({ ...key('edge', '1u', 0, 0), rotation: 45 }, [])).toBe(false);
+  });
+
+  it('preserves a fractional center phase during grid movement and bypasses snapping with Shift', () => {
+    const a = { ...key('a', '1.25u', 40.123, 40.456), rotation: 27 };
+    const result = moveKeysWithSnap([a], [], 5, 7);
+    expect(result.keys[0].xMm).toBeCloseTo(44.373);
+    expect(result.keys[0].yMm).toBeCloseTo(48.956);
+    expect(result.grid).toBe(true);
+    const free = moveKeysWithSnap([a], [], 5.123, 7.456, UNIT_MM, 5, false);
+    expect(free.keys[0].xMm).toBeCloseTo(45.246);
+    expect(free.keys[0].yMm).toBeCloseTo(47.912);
+    expect(free.grid).toBe(false);
+    expect(free.corner).toBeNull();
+  });
+
+  it('snaps a rotated key corner exactly to another key, including a rotated target', () => {
+    const target = { ...key('b', '1u', 40, 40), rotation: 15 };
+    const source = { ...key('a', '1u', 100, 100), rotation: 45 };
+    const point = keyCorners(target)[2], moving = keyCorners(source)[0];
+    const result = moveKeysWithSnap([source], [target], point[0] - moving[0] + .2, point[1] - moving[1] - .1, UNIT_MM, 2);
+    expect(result.placed).toBe(true);
+    expect(result.corner).toMatchObject({ sourceId: 'a', sourceCorner: 0, targetId: 'b', targetCorner: 2 });
+    expect(keyCorners(result.keys[0])[0][0]).toBeCloseTo(point[0]);
+    expect(keyCorners(result.keys[0])[0][1]).toBeCloseTo(point[1]);
+    expect(result.keys[0].rotation).toBe(45);
+    expect(collides(result.keys[0], target)).toBe(false);
+  });
+
+  it('rejects corner snaps that cause overlap and preserves group spacing', () => {
+    const a = key('a', '1u', 60, 60), b = key('b', '1u', 40, 40);
+    const invalid = moveKeysWithSnap([a], [b], -20, -20, UNIT_MM, 1);
+    expect(invalid.placed).toBe(false);
+    expect(invalid.corner).toBeNull();
+    const c = { ...key('c', '1u', 90, 60), rotation: 30 };
+    const group = moveKeysWithSnap([a, c], [b], -3.2, 9.1);
+    expect(group.keys[1].xMm - group.keys[0].xMm).toBeCloseTo(30);
+    expect(group.keys[1].yMm - group.keys[0].yMm).toBeCloseTo(0);
+    expect(group.keys[1].rotation).toBe(30);
+  });
+
+  it('validates finite key angles in CCAP while preserving legacy zero-angle keys', () => {
+    const design = newDesign();
+    design.keys = [{ ...key('12345678-1234-4123-8123-123456789012', '1u', 40, 40), rotation: -32.75 }];
+    expect(() => validateDesign(design)).not.toThrow();
+    expect(() => validateDesign({ ...design, keys: [{ ...design.keys[0], rotation: NaN }] })).toThrow();
+  });
+
   it('reports the actual resize snap axis and moving corner, including rotated images', () => {
     const art = { file: 'art.png', xMm: 10, yMm: 20, widthMm: 100, heightMm: 50, rotation: 0 };
     expect(resizeArtworkWithSnap(art, 2, { x: 130, y: 80 }).snap).toEqual({ axis: 'y', corner: 2 });
