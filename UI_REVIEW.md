@@ -1,8 +1,8 @@
-# CanvasCaps Studio UI review — v0.2.0
+# CanvasCapsDesigner UI review — v0.2.0
 
 ## Design direction
 
-CanvasCapsのデザイン編集画面を再設計。紙色の背景、深いチャコール、ライムのアクセント、独自のキーボードイラストとキー描画で一貫した表現にしています。画像素材やアイコンパッケージを追加せず、イラストとアイコンはSVGで描画しています。
+CanvasCapsDesignerのデザイン編集画面を再設計。紙色の背景、深いチャコール、ライムのアクセント、独自のキーボードイラストとキー描画で一貫した表現にしています。画像素材やアイコンパッケージを追加せず、イラストとアイコンはSVGで描画しています。
 
 ## Self-review and iterations
 

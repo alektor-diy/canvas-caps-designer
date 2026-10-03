@@ -1231,6 +1231,7 @@ kbd{
 .artwork-slots button.current{background:#e7edce;border-color:#687b21;color:#35441c}
 .artwork-slots small{font-size:10px;font-weight:400}
 .app>header{height:88px;padding-inline:24px;gap:20px}
+.brand b{font-size:22px;white-space:nowrap}
 .actions{gap:8px;flex-wrap:wrap;align-items:center}
 .actions button,.actions .primary{height:40px;padding:0 14px;font-size:12px}
 .actions .share-button{margin-right:8px;white-space:nowrap;font-weight:500}
@@ -1244,4 +1245,5 @@ kbd{
 .share-link:hover{background:#414b2c}
 .share-dialog>div{flex-wrap:wrap}
 @media(max-width:760px){.studio-heading{flex-wrap:wrap;gap:12px}.share-dialog{padding:24px}}
-@media(max-width:900px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}
+@media(max-width:1000px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}
+@media(max-width:480px){.brand{gap:8px}.brand b{font-size:18px}.logo{width:35px;height:35px}}
