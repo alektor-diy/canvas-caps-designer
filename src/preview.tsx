@@ -42,9 +42,9 @@ export function previewFrame(design: Design): PreviewFrame {
     height: Math.max(extent.height, design.layout.unitMm) + pad * 2 };
 }
 
-export function previewSvg(design: Design, imageUrl: string | readonly string[]) {
+export function previewSvg(design: Design, imageUrl: string | readonly string[], maxEdge = 1600) {
   const frame = previewFrame(design);
-  const scale = 1600 / Math.max(frame.width, frame.height);
+  const scale = Math.min(1600, maxEdge) / Math.max(frame.width, frame.height);
   const width = Math.max(1, Math.round(frame.width * scale));
   const height = Math.max(1, Math.round(frame.height * scale));
   const markup = renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" width={width} height={height}
@@ -63,14 +63,14 @@ function imageDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export async function createPreviewPng(design: Design, artwork: Blob | null | readonly (Blob | null)[]): Promise<Blob> {
+export async function createPreviewPng(design: Design, artwork: Blob | null | readonly (Blob | null)[], maxEdge = 1600): Promise<Blob> {
   const blobs = Array.isArray(artwork) ? artwork : [artwork as Blob | null];
   const imageUrls = await Promise.all(artworkSlots(design).map(async (art,i) => {
     if (!art) return '';
     if (!blobs[i]) throw new Error('プレビュー用のアートワークがありません');
     return imageDataUrl(blobs[i]!);
   }));
-  const { markup, width, height } = previewSvg(design, imageUrls);
+  const { markup, width, height } = previewSvg(design, imageUrls, maxEdge);
   const svgUrl = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
   try {
     const image = new Image();
