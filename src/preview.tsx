@@ -1,15 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { bounds, Design, keyPath } from './model';
+import { artworkOrder, artworkSlots, bounds, Design, keyPath } from './model';
 
 export type PreviewFrame = { minX: number; minY: number; width: number; height: number };
 
 // Used by both the live preview and the PNG export. Keep presentation here so
 // exports do not depend on editor selection, external CSS or image object URLs.
-export function PreviewScene({ design, imageUrl, frame, pixelWidth }: {
-  design: Design; imageUrl: string; frame: PreviewFrame; pixelWidth: number;
+export function PreviewScene({ design, imageUrl = '', imageUrls = [imageUrl], frame, pixelWidth }: {
+  design: Design; imageUrl?: string; imageUrls?: readonly string[]; frame: PreviewFrame; pixelWidth: number;
 }) {
   const paths = design.keys.map(key => keyPath(key, design.layout.unitMm));
-  const art = design.artwork;
+
   const mmPerPixel = frame.width / Math.max(1, pixelWidth);
   return <g pointerEvents="none">
     <defs>
@@ -23,10 +23,10 @@ export function PreviewScene({ design, imageUrl, frame, pixelWidth }: {
     </defs>
     <rect x={frame.minX} y={frame.minY} width={frame.width} height={frame.height} fill="url(#preview-background)"/>
     <g filter="url(#preview-shadow)">{paths.map((path, i) => <path key={i} d={path} fill="#fff"/>)}</g>
-    {imageUrl && art && <g clipPath="url(#preview-keycaps)">
-      <image href={imageUrl} x={art.xMm} y={art.yMm} width={art.widthMm} height={art.heightMm}
+    <g clipPath="url(#preview-keycaps)">{artworkOrder(design).map(i => {const art=artworkSlots(design)[i];return art && imageUrls[i] &&
+      <image key={i} href={imageUrls[i]} x={art.xMm} y={art.yMm} width={art.widthMm} height={art.heightMm}
         preserveAspectRatio="none" transform={`rotate(${art.rotation} ${art.xMm + art.widthMm / 2} ${art.yMm + art.heightMm / 2})`}/>
-    </g>}
+    })}</g>
     {paths.map((path, i) => <g key={i}>
       <path d={path} fill="none" stroke="#20272c" strokeWidth="2.8" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
       <path d={path} fill="none" stroke="#f8fafb" strokeWidth=".9" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
@@ -42,14 +42,14 @@ export function previewFrame(design: Design): PreviewFrame {
     height: Math.max(extent.height, design.layout.unitMm) + pad * 2 };
 }
 
-export function previewSvg(design: Design, imageUrl: string) {
+export function previewSvg(design: Design, imageUrl: string | readonly string[]) {
   const frame = previewFrame(design);
   const scale = 1600 / Math.max(frame.width, frame.height);
   const width = Math.max(1, Math.round(frame.width * scale));
   const height = Math.max(1, Math.round(frame.height * scale));
   const markup = renderToStaticMarkup(<svg xmlns="http://www.w3.org/2000/svg" width={width} height={height}
     viewBox={`${frame.minX} ${frame.minY} ${frame.width} ${frame.height}`}>
-    <PreviewScene design={design} imageUrl={imageUrl} frame={frame} pixelWidth={width}/>
+    <PreviewScene design={design} imageUrls={typeof imageUrl === 'string' ? [imageUrl] : imageUrl} frame={frame} pixelWidth={width}/>
   </svg>);
   return { markup, width, height };
 }
@@ -63,10 +63,14 @@ function imageDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export async function createPreviewPng(design: Design, artwork: Blob | null): Promise<Blob> {
-  if (design.artwork && !artwork) throw new Error('プレビュー用のアートワークがありません');
-  const imageUrl = design.artwork && artwork ? await imageDataUrl(artwork) : '';
-  const { markup, width, height } = previewSvg(design, imageUrl);
+export async function createPreviewPng(design: Design, artwork: Blob | null | readonly (Blob | null)[]): Promise<Blob> {
+  const blobs = Array.isArray(artwork) ? artwork : [artwork as Blob | null];
+  const imageUrls = await Promise.all(artworkSlots(design).map(async (art,i) => {
+    if (!art) return '';
+    if (!blobs[i]) throw new Error('プレビュー用のアートワークがありません');
+    return imageDataUrl(blobs[i]!);
+  }));
+  const { markup, width, height } = previewSvg(design, imageUrls);
   const svgUrl = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
   try {
     const image = new Image();
