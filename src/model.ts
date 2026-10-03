@@ -39,18 +39,54 @@ export function moveArtworkWithSnap(art:Artwork,dx:number,dy:number,unit=UNIT_MM
  const x=choose('x'),y=choose('y');
  return {artwork:{...moved,xMm:moved.xMm+x.delta,yMm:moved.yMm+y.delta},snap:{x:x.corner,y:y.corner}};
 }
-export function polygons(k:Key,unit=UNIT_MM):[number,number][][] {
+function unrotatedPolygons(k:Key,unit=UNIT_MM):[number,number][][] {
  const x=k.xMm,y=k.yMm,w=Number.parseFloat(k.type),u=unit;
  if(k.type==='ISO Enter') return [[ [x,y],[x+1.5*u,y],[x+1.5*u,y+u],[x,y+u] ],[ [x+.25*u,y+u],[x+1.5*u,y+u],[x+1.5*u,y+2*u],[x+.25*u,y+2*u] ]];
  return [[[x,y],[x+w*u,y],[x+w*u,y+u],[x,y+u]]];
 }
-export function keyPath(k:Key,unit=UNIT_MM){const x=k.xMm,y=k.yMm,u=unit,w=k.type==='ISO Enter'?1.5:Number.parseFloat(k.type);if(k.type==='ISO Enter')return `M ${x} ${y} h ${1.5*u} v ${2*u} h ${-1.25*u} v ${-u} h ${-.25*u} Z`;return `M ${x} ${y} h ${w*u} v ${u} h ${-w*u} Z`;}
+export const keyCenter=(k:Key,unit=UNIT_MM)=>({x:k.xMm+(k.type==='ISO Enter'?1.5:parseFloat(k.type))*unit/2,y:k.yMm+(k.type==='ISO Enter'?2:1)*unit/2});
+export const keyTransform=(k:Key,unit=UNIT_MM)=>{const c=keyCenter(k,unit);return `rotate(${k.rotation} ${c.x} ${c.y})`};
+function rotateKeyPoint(k:Key,p:[number,number],unit:number):[number,number]{const c=keyCenter(k,unit),r=k.rotation*Math.PI/180,x=p[0]-c.x,y=p[1]-c.y;return [c.x+x*Math.cos(r)-y*Math.sin(r),c.y+x*Math.sin(r)+y*Math.cos(r)]}
+export function polygons(k:Key,unit=UNIT_MM):[number,number][][] {return unrotatedPolygons(k,unit).map(poly=>poly.map(p=>rotateKeyPoint(k,p,unit)))}
+export function keyCorners(k:Key,unit=UNIT_MM):[number,number][]{
+ const x=k.xMm,y=k.yMm,u=unit;
+ const points:[number,number][]=k.type==='ISO Enter'?[[x,y],[x+1.5*u,y],[x+1.5*u,y+2*u],[x+.25*u,y+2*u],[x+.25*u,y+u],[x,y+u]]:unrotatedPolygons(k,unit)[0];
+ return points.map(p=>rotateKeyPoint(k,p,unit));
+}
+export function keyPath(k:Key,unit=UNIT_MM){if(k.rotation!==0){const points=keyCorners(k,unit);return `M ${points.map(p=>p.join(' ')).join(' L ')} Z`} const x=k.xMm,y=k.yMm,u=unit,w=k.type==='ISO Enter'?1.5:Number.parseFloat(k.type);if(k.type==='ISO Enter')return `M ${x} ${y} h ${1.5*u} v ${2*u} h ${-1.25*u} v ${-u} h ${-.25*u} Z`;return `M ${x} ${y} h ${w*u} v ${u} h ${-w*u} Z`;}
 export function bounds(keys:Key[],unit=UNIT_MM){ if(!keys.length)return {minX:0,minY:0,maxX:0,maxY:0,width:0,height:0}; const pts=keys.flatMap(k=>polygons(k,unit).flat()); const minX=Math.min(...pts.map(p=>p[0])), minY=Math.min(...pts.map(p=>p[1])), maxX=Math.max(...pts.map(p=>p[0])), maxY=Math.max(...pts.map(p=>p[1])); return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY}; }
-function polyOverlap(a:[number,number][],b:[number,number][]){const ax=Math.min(...a.map(p=>p[0])),ay=Math.min(...a.map(p=>p[1])),bx=Math.max(...a.map(p=>p[0])),by=Math.max(...a.map(p=>p[1])),cx=Math.min(...b.map(p=>p[0])),cy=Math.min(...b.map(p=>p[1])),dx=Math.max(...b.map(p=>p[0])),dy=Math.max(...b.map(p=>p[1]));return ax<dx-1e-7&&bx>cx+1e-7&&ay<dy-1e-7&&by>cy+1e-7;}
+function polyOverlap(a:[number,number][],b:[number,number][]){
+ for(const poly of [a,b])for(let i=0;i<poly.length;i++){
+  const p=poly[i],q=poly[(i+1)%poly.length],length=Math.hypot(q[0]-p[0],q[1]-p[1]);
+  const nx=-(q[1]-p[1])/length,ny=(q[0]-p[0])/length;
+  const project=(points:[number,number][])=>points.map(v=>v[0]*nx+v[1]*ny),pa=project(a),pb=project(b);
+  if(Math.max(...pa)<=Math.min(...pb)+1e-7||Math.max(...pb)<=Math.min(...pa)+1e-7)return false;
+ }
+ return true;
+}
 export function collides(a:Key,b:Key,unit=UNIT_MM){return polygons(a,unit).some(pa=>polygons(b,unit).some(pb=>polyOverlap(pa,pb)));}
 export function canPlace(key:Key,keys:Key[],unit=UNIT_MM){const extent=bounds([key],unit),epsilon=1e-7;return extent.minX>=-epsilon&&extent.minY>=-epsilon&&extent.maxX<=WORK_AREA_WIDTH_U*unit+epsilon&&extent.maxY<=WORK_AREA_HEIGHT_U*unit+epsilon&&!keys.some(k=>k.id!==key.id&&collides(key,k,unit));}
-export function clampKeyPosition(key:Key,xMm:number,yMm:number,unit=UNIT_MM){const extent=bounds([key],unit),minX=key.xMm-extent.minX,minY=key.yMm-extent.minY,maxX=WORK_AREA_WIDTH_U*unit-(extent.maxX-key.xMm),maxY=WORK_AREA_HEIGHT_U*unit-(extent.maxY-key.yMm);return {...key,xMm:Math.min(maxX,Math.max(minX,snapMm(xMm,unit))),yMm:Math.min(maxY,Math.max(minY,snapMm(yMm,unit)))};}
-export function clampKeyGroupDelta(keys:Key[],dx:number,dy:number,unit=UNIT_MM){const extent=bounds(keys,unit),snappedX=snapMm(dx,unit),snappedY=snapMm(dy,unit),minX=-extent.minX,minY=-extent.minY,maxX=WORK_AREA_WIDTH_U*unit-extent.maxX,maxY=WORK_AREA_HEIGHT_U*unit-extent.maxY,xMm=Math.min(maxX,Math.max(minX,snappedX)),yMm=Math.min(maxY,Math.max(minY,snappedY));return {xMm:xMm===0?0:xMm,yMm:yMm===0?0:yMm};}
+export function clampKeyPosition(key:Key,xMm:number,yMm:number,unit=UNIT_MM,snap=true){const extent=bounds([key],unit),minX=key.xMm-extent.minX,minY=key.yMm-extent.minY,maxX=WORK_AREA_WIDTH_U*unit-(extent.maxX-key.xMm),maxY=WORK_AREA_HEIGHT_U*unit-(extent.maxY-key.yMm);return {...key,xMm:Math.min(maxX,Math.max(minX,(snap?key.xMm+snapMm(xMm-key.xMm,unit):xMm))),yMm:Math.min(maxY,Math.max(minY,(snap?key.yMm+snapMm(yMm-key.yMm,unit):yMm)))};}
+export function clampKeyGroupDelta(keys:Key[],dx:number,dy:number,unit=UNIT_MM,snap=true){const extent=bounds(keys,unit),snappedX=snap?snapMm(dx,unit):dx,snappedY=snap?snapMm(dy,unit):dy,minX=-extent.minX,minY=-extent.minY,maxX=WORK_AREA_WIDTH_U*unit-extent.maxX,maxY=WORK_AREA_HEIGHT_U*unit-extent.maxY,xMm=Math.min(maxX,Math.max(minX,snappedX)),yMm=Math.min(maxY,Math.max(minY,snappedY));return {xMm:xMm===0?0:xMm,yMm:yMm===0?0:yMm};}
+export type KeyCornerSnap={sourceId:string;sourceCorner:number;targetId:string;targetCorner:number;point:[number,number]};
+export function moveKeysWithSnap(keys:Key[],others:Key[],dx:number,dy:number,unit=UNIT_MM,tolerance=unit*.4,snap=true,previous:KeyCornerSnap|null=null):{keys:Key[];corner:KeyCornerSnap|null;grid:boolean;placed:boolean}{
+ const translated=(x:number,y:number)=>keys.map(k=>({...k,xMm:k.xMm+x,yMm:k.yMm+y}));
+ const valid=(targets:Key[])=>targets.every((k,i)=>canPlace(k,[...others,...targets.slice(0,i)],unit));
+ if(snap){
+  const candidates:{match:KeyCornerSnap;dx:number;dy:number;distance:number;sticky:boolean}[]=[];
+  for(const source of keys)keyCorners(source,unit).forEach((p,sourceCorner)=>{
+   for(const target of others)keyCorners(target,unit).forEach((point,targetCorner)=>{
+    const distance=Math.hypot(point[0]-(p[0]+dx),point[1]-(p[1]+dy));
+    const sticky=previous?.sourceId===source.id&&previous.sourceCorner===sourceCorner&&previous.targetId===target.id&&previous.targetCorner===targetCorner;
+    if(distance<=tolerance*(sticky?1.4:1))candidates.push({match:{sourceId:source.id,sourceCorner,targetId:target.id,targetCorner,point},dx:point[0]-p[0],dy:point[1]-p[1],distance,sticky});
+   });
+  });
+  candidates.sort((a,b)=>(a.distance-(a.sticky?tolerance*.2:0))-(b.distance-(b.sticky?tolerance*.2:0)));
+  for(const candidate of candidates){const targets=translated(candidate.dx,candidate.dy);if(valid(targets))return {keys:targets,corner:candidate.match,grid:false,placed:true};}
+ }
+ const delta=clampKeyGroupDelta(keys,dx,dy,unit,snap),targets=translated(delta.xMm,delta.yMm);
+ const placed=valid(targets);return {keys:placed?targets:keys,corner:null,grid:snap&&placed,placed};
+}
 export function resizeArtworkWithSnap(art:Artwork,corner:ArtworkCorner,pointer:{x:number;y:number},unit=UNIT_MM,snap=true):{artwork:Artwork;snap:{axis:'x'|'y';corner:ArtworkCorner}|null} {
  let snapAxis:'x'|'y'|null=null;
  const sx=corner===0||corner===3?-1:1,sy=corner<2?-1:1,cx=art.xMm+art.widthMm/2,cy=art.yMm+art.heightMm/2,rad=art.rotation*Math.PI/180,cos=Math.cos(rad),sin=Math.sin(rad);
@@ -88,7 +124,7 @@ export function resizeArtworkWithSnap(art:Artwork,corner:ArtworkCorner,pointer:{
 export function resizeArtworkFromCorner(art:Artwork,corner:ArtworkCorner,pointer:{x:number;y:number},unit=UNIT_MM,snap=true):Artwork {
  return resizeArtworkWithSnap(art,corner,pointer,unit,snap).artwork;
 }
-export function nextKeyPosition(type:KeyType,keys:Key[],anchorId?:string,unit=UNIT_MM){const anchor=keys.find(k=>k.id===anchorId)??keys[keys.length-1],startX=anchor?anchor.xMm+bounds([anchor],unit).width:0,yMm=anchor?.yMm??0;for(let step=0;step<256;step++){const xMm=snapMm(startX+step*unit*GRID_U,unit),candidate:Key={id:'\u0000placement-candidate',type,xMm,yMm,rotation:0};if(canPlace(candidate,keys,unit))return{xMm,yMm};}return null;}
+export function nextKeyPosition(type:KeyType,keys:Key[],anchorId?:string,unit=UNIT_MM){const anchor=keys.find(k=>k.id===anchorId)??keys[keys.length-1],startX=anchor?bounds([anchor],unit).maxX:0,yMm=anchor?.yMm??0;for(let step=0;step<256;step++){const xMm=snapMm(startX+step*unit*GRID_U,unit),candidate:Key={id:'\u0000placement-candidate',type,xMm,yMm,rotation:0};if(canPlace(candidate,keys,unit))return{xMm,yMm};}return null;}
 export function manufacturableSize(keys:Key[],unit=UNIT_MM){const b=bounds(keys,unit),w=toU(b.width,unit),h=toU(b.height,unit);return {ok:(w<=14&&h<=14)||(w<=15&&h<=5),widthU:w,heightU:h};}
 export const effectivePpi=(pixelWidth:number,widthMm:number)=>pixelWidth/(widthMm/25.4);
-export function validateDesign(v:unknown): asserts v is Design { if(!v||typeof v!=='object')throw Error('CCAPのproject.jsonが不正です');const d=v as Partial<Design>; if(d.formatVersion!==1)throw Error(`非対応のformatVersionです (${String(d.formatVersion)})`); if(!d.project||typeof d.project.name!=='string'||typeof d.project.createdAt!=='string'||typeof d.project.modifiedAt!=='string'||!d.layout||!Number.isFinite(d.layout.unitMm)||d.layout.unitMm!<=0||!Array.isArray(d.keys)||!Object.prototype.hasOwnProperty.call(d,'artwork'))throw Error('CCAPの必須データが不足しています');const ids=new Set<string>(),validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;for(const k of d.keys){if(!k||typeof k.id!=='string'||!validId.test(k.id)||ids.has(k.id)||!KEY_TYPES.includes(k.type)||!Number.isFinite(k.xMm)||!Number.isFinite(k.yMm)||k.xMm<0||k.yMm<0||k.rotation!==0||d.keys.slice(0,d.keys.indexOf(k)).some(prev=>collides(k,prev,d.layout!.unitMm)))throw Error('CCAPのキー情報が不正です');ids.add(k.id);}if(d.frontArtwork!==undefined&&d.frontArtwork!==0&&d.frontArtwork!==1)throw Error('CCAPの画像の重なり順が不正です');if(d.artwork2!==undefined&&d.artwork2!==null&&d.artwork?.file===d.artwork2.file)throw Error('CCAPの画像ファイル名が重複しています');for(const a of [d.artwork,d.artwork2??null]){if(a===null)continue;if(!a||typeof a.file!=='string'||!/[.]((png)|(jpe?g)|(webp))$/i.test(a.file)||![a.xMm,a.yMm,a.widthMm,a.heightMm,a.rotation].every(Number.isFinite)||a.widthMm<=0||a.heightMm<=0)throw Error('CCAPのアートワーク情報が不正です');}}
+export function validateDesign(v:unknown): asserts v is Design { if(!v||typeof v!=='object')throw Error('CCAPのproject.jsonが不正です');const d=v as Partial<Design>; if(d.formatVersion!==1)throw Error(`非対応のformatVersionです (${String(d.formatVersion)})`); if(!d.project||typeof d.project.name!=='string'||typeof d.project.createdAt!=='string'||typeof d.project.modifiedAt!=='string'||!d.layout||!Number.isFinite(d.layout.unitMm)||d.layout.unitMm!<=0||!Array.isArray(d.keys)||!Object.prototype.hasOwnProperty.call(d,'artwork'))throw Error('CCAPの必須データが不足しています');const ids=new Set<string>(),validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;for(const k of d.keys){if(!k||typeof k.id!=='string'||!validId.test(k.id)||ids.has(k.id)||!KEY_TYPES.includes(k.type)||!Number.isFinite(k.xMm)||!Number.isFinite(k.yMm)||!Number.isFinite(k.rotation)||bounds([k],d.layout!.unitMm).minX < -1e-7||bounds([k],d.layout!.unitMm).minY < -1e-7||d.keys.slice(0,d.keys.indexOf(k)).some(prev=>collides(k,prev,d.layout!.unitMm)))throw Error('CCAPのキー情報が不正です');ids.add(k.id);}if(d.frontArtwork!==undefined&&d.frontArtwork!==0&&d.frontArtwork!==1)throw Error('CCAPの画像の重なり順が不正です');if(d.artwork2!==undefined&&d.artwork2!==null&&d.artwork?.file===d.artwork2.file)throw Error('CCAPの画像ファイル名が重複しています');for(const a of [d.artwork,d.artwork2??null]){if(a===null)continue;if(!a||typeof a.file!=='string'||!/[.]((png)|(jpe?g)|(webp))$/i.test(a.file)||![a.xMm,a.yMm,a.widthMm,a.heightMm,a.rotation].every(Number.isFinite)||a.widthMm<=0||a.heightMm<=0)throw Error('CCAPのアートワーク情報が不正です');}}
