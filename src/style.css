@@ -1235,6 +1235,10 @@ kbd{
 .actions{gap:8px;flex-wrap:wrap;align-items:center}
 .actions button,.actions .primary{height:40px;padding:0 14px;font-size:12px}
 .actions .share-button{margin-right:8px;white-space:nowrap;font-weight:500}
+.actions{align-items:flex-start}
+.save-action{display:flex;flex-direction:column;gap:6px;max-width:270px;min-width:0}
+.save-action .primary{white-space:nowrap;min-width:0}
+.save-action small{font-size:11px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}
 .share-button>span{font-size:17px;line-height:1}
 .share-dialog{border:1px solid var(--line);color:var(--ink);max-height:calc(100dvh - 40px);overflow:auto}
 .share-dialog::backdrop{background:#22281e70}
@@ -1252,3 +1256,4 @@ kbd{
 @media(max-width:760px){.studio-heading{flex-wrap:wrap;gap:12px}.share-dialog{padding:24px}}
 @media(max-width:1000px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}
 @media(max-width:480px){.brand{gap:8px}.brand b{font-size:18px}.logo{width:35px;height:35px}}
+@media(min-width:1001px) and (max-width:1200px){.app>header{height:auto;min-height:88px;flex-wrap:wrap;gap:12px;padding-block:16px}.project{margin-left:auto}.actions{width:100%;justify-content:flex-end}}
