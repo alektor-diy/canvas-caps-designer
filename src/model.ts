@@ -1,4 +1,6 @@
 export const UNIT_MM = 17;
+export const STANDARD_UNIT_MM = 19.05;
+export const PITCHES = [UNIT_MM, STANDARD_UNIT_MM] as const;
 export const GRID_U = 0.25;
 export const WORK_AREA_WIDTH_U = 20;
 export const WORK_AREA_HEIGHT_U = 15;
@@ -13,6 +15,22 @@ export const artworkSlots = (design:Design) => [design.artwork, design.artwork2 
 export const artworkOrder = (design:Design):ArtworkSlot[] => design.frontArtwork===0?[1,0]:[0,1];
 export const setArtwork = (design:Design, slot:ArtworkSlot, artwork:Artwork|null):Design => ({...design,[slot===0?'artwork':'artwork2']:artwork});
 export const newDesign = (name='My CanvasCapsDesigner'):Design => { const now=new Date().toISOString(); return {formatVersion:1,project:{name,createdAt:now,modifiedAt:now},layout:{unitMm:UNIT_MM},keys:[],artwork:null}; };
+export function changePitch(design:Design,unitMm:number):Design {
+ if(!PITCHES.some(pitch=>pitch===unitMm))throw Error('非対応のキーピッチです');
+ if(unitMm===design.layout.unitMm)return design;
+ const ratio=unitMm/design.layout.unitMm;
+ const approximate=(value:number)=>Math.round(value*ratio*100)/100;
+ const convertArtwork=(art:Artwork|null):Artwork|null=>{
+  if(!art)return null;
+  // Round the width to 0.01 mm and derive height to preserve the aspect ratio.
+  const widthMm=Math.max(.01,approximate(art.widthMm));
+  return {...art,xMm:approximate(art.xMm),yMm:approximate(art.yMm),widthMm,heightMm:widthMm*art.heightMm/art.widthMm};
+ };
+ return {...design,layout:{...design.layout,unitMm},
+  keys:design.keys.map(key=>({...key,xMm:key.xMm*ratio,yMm:key.yMm*ratio})),
+  artwork:convertArtwork(design.artwork),
+  ...(design.artwork2!==undefined?{artwork2:convertArtwork(design.artwork2)}:{})};
+}
 export const toU=(mm:number,unit=UNIT_MM)=>mm/unit;
 export const toMm=(u:number,unit=UNIT_MM)=>u*unit;
 export const snapMm=(mm:number,unit=UNIT_MM)=>Math.round(mm/(unit*GRID_U))*unit*GRID_U;
@@ -125,6 +143,7 @@ export function resizeArtworkFromCorner(art:Artwork,corner:ArtworkCorner,pointer
  return resizeArtworkWithSnap(art,corner,pointer,unit,snap).artwork;
 }
 export function nextKeyPosition(type:KeyType,keys:Key[],anchorId?:string,unit=UNIT_MM){const anchor=keys.find(k=>k.id===anchorId)??keys[keys.length-1],startX=anchor?bounds([anchor],unit).maxX:0,yMm=anchor?.yMm??0;for(let step=0;step<256;step++){const xMm=snapMm(startX+step*unit*GRID_U,unit),candidate:Key={id:'\u0000placement-candidate',type,xMm,yMm,rotation:0};if(canPlace(candidate,keys,unit))return{xMm,yMm};}return null;}
-export function manufacturableSize(keys:Key[],unit=UNIT_MM){const b=bounds(keys,unit),w=toU(b.width,unit),h=toU(b.height,unit);return {ok:(w<=14&&h<=14)||(w<=15&&h<=5),widthU:w,heightU:h};}
+export function manufacturingSizeGuide(unit=UNIT_MM){return unit===STANDARD_UNIT_MM?'13u × 13u':'14u × 14u または 15u × 5u';}
+export function manufacturableSize(keys:Key[],unit=UNIT_MM){const b=bounds(keys,unit),w=toU(b.width,unit),h=toU(b.height,unit),epsilon=1e-7;return {ok:unit===STANDARD_UNIT_MM?w<=13+epsilon&&h<=13+epsilon:(w<=14+epsilon&&h<=14+epsilon)||(w<=15+epsilon&&h<=5+epsilon),widthU:w,heightU:h};}
 export const effectivePpi=(pixelWidth:number,widthMm:number)=>pixelWidth/(widthMm/25.4);
 export function validateDesign(v:unknown): asserts v is Design { if(!v||typeof v!=='object')throw Error('CCAPのproject.jsonが不正です');const d=v as Partial<Design>; if(d.formatVersion!==1)throw Error(`非対応のformatVersionです (${String(d.formatVersion)})`); if(!d.project||typeof d.project.name!=='string'||typeof d.project.createdAt!=='string'||typeof d.project.modifiedAt!=='string'||!d.layout||!Number.isFinite(d.layout.unitMm)||d.layout.unitMm!<=0||!Array.isArray(d.keys)||!Object.prototype.hasOwnProperty.call(d,'artwork'))throw Error('CCAPの必須データが不足しています');const ids=new Set<string>(),validId=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;for(const k of d.keys){if(!k||typeof k.id!=='string'||!validId.test(k.id)||ids.has(k.id)||!KEY_TYPES.includes(k.type)||!Number.isFinite(k.xMm)||!Number.isFinite(k.yMm)||!Number.isFinite(k.rotation)||bounds([k],d.layout!.unitMm).minX < -1e-7||bounds([k],d.layout!.unitMm).minY < -1e-7||d.keys.slice(0,d.keys.indexOf(k)).some(prev=>collides(k,prev,d.layout!.unitMm)))throw Error('CCAPのキー情報が不正です');ids.add(k.id);}if(d.frontArtwork!==undefined&&d.frontArtwork!==0&&d.frontArtwork!==1)throw Error('CCAPの画像の重なり順が不正です');if(d.artwork2!==undefined&&d.artwork2!==null&&d.artwork?.file===d.artwork2.file)throw Error('CCAPの画像ファイル名が重複しています');for(const a of [d.artwork,d.artwork2??null]){if(a===null)continue;if(!a||typeof a.file!=='string'||!/[.]((png)|(jpe?g)|(webp))$/i.test(a.file)||![a.xMm,a.yMm,a.widthMm,a.heightMm,a.rotation].every(Number.isFinite)||a.widthMm<=0||a.heightMm<=0)throw Error('CCAPのアートワーク情報が不正です');}}
